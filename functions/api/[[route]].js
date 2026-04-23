@@ -4,12 +4,74 @@ import { createClient } from '@libsql/client/web';
 
 const app = new Hono().basePath('/api');
 
+// Module-level flag — runs once per Worker instance (not every request)
+let migrated = false;
+
 function getDb(env) {
   return createClient({
     url: env.TURSO_DATABASE_URL,
     authToken: env.TURSO_AUTH_TOKEN,
   });
 }
+
+async function migrate(db) {
+  if (migrated) return;
+  await db.batch([
+    { sql: `CREATE TABLE IF NOT EXISTS tags (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      color_bg TEXT NOT NULL,
+      color_text TEXT NOT NULL,
+      color_border TEXT NOT NULL,
+      created_at INTEGER DEFAULT (unixepoch())
+    )`, args: [] },
+    { sql: `CREATE TABLE IF NOT EXISTS expenses (
+      id TEXT PRIMARY KEY,
+      amount REAL NOT NULL,
+      place TEXT NOT NULL,
+      card TEXT DEFAULT '',
+      date TEXT NOT NULL,
+      created_at INTEGER DEFAULT (unixepoch())
+    )`, args: [] },
+    { sql: `CREATE TABLE IF NOT EXISTS expense_tags (
+      expense_id TEXT NOT NULL REFERENCES expenses(id) ON DELETE CASCADE,
+      tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (expense_id, tag_id)
+    )`, args: [] },
+    { sql: `CREATE TABLE IF NOT EXISTS budget_income (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      amount REAL NOT NULL,
+      frequency TEXT NOT NULL DEFAULT 'monthly',
+      tax_rate REAL DEFAULT 0,
+      created_at INTEGER DEFAULT (unixepoch())
+    )`, args: [] },
+    { sql: `CREATE TABLE IF NOT EXISTS budget_income_tags (
+      income_id TEXT NOT NULL REFERENCES budget_income(id) ON DELETE CASCADE,
+      tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (income_id, tag_id)
+    )`, args: [] },
+    { sql: `CREATE TABLE IF NOT EXISTS budget_items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      amount REAL NOT NULL,
+      frequency TEXT NOT NULL DEFAULT 'monthly',
+      created_at INTEGER DEFAULT (unixepoch())
+    )`, args: [] },
+    { sql: `CREATE TABLE IF NOT EXISTS budget_item_tags (
+      item_id TEXT NOT NULL REFERENCES budget_items(id) ON DELETE CASCADE,
+      tag_id TEXT NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+      PRIMARY KEY (item_id, tag_id)
+    )`, args: [] },
+  ]);
+  migrated = true;
+}
+
+// Run migrations before any API handler
+app.use('*', async (c, next) => {
+  await migrate(getDb(c.env));
+  await next();
+});
 
 function rowToTag(row) {
   return {
