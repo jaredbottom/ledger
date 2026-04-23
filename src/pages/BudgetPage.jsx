@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Tag from '../components/Tag.jsx';
 import TagPicker from '../components/TagPicker.jsx';
-import { uid, fmt, toMonthly, FREQ_LABELS } from '../helpers.js';
+import { uid, fmt, toMonthly, FREQ_LABELS, FREQ_SHORT } from '../helpers.js';
 
 const freqOptions = Object.entries(FREQ_LABELS);
 
@@ -129,9 +129,11 @@ function BudgetRow({ item, onUpdate, onDelete, isIncome, tags, amountColor }) {
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-        <span className="budget-row-freq">{FREQ_LABELS[item.frequency]}</span>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: amountColor, fontWeight: 500 }}>{fmt(item.amount)}</div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 14, color: amountColor, fontWeight: 500 }}>
+            {fmt(item.amount)}
+            {showMonthly && <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 400 }}>{FREQ_SHORT[item.frequency]}</span>}
+          </div>
           {(showMonthly || (isIncome && item.taxRate > 0)) && (
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>
               {fmt(netAmt)}/mo{isIncome && item.taxRate > 0 ? ' net' : ''}

@@ -360,7 +360,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-sans);
     animation: fadeIn 0.18s ease;
   }
 
-  .page { padding: 16px 14px; }
+  .page { padding: 16px 14px; padding-bottom: max(32px, env(safe-area-inset-bottom, 0px) + 16px); }
 
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
 

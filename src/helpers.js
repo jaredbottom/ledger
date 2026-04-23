@@ -27,6 +27,15 @@ export const FREQ_LABELS = {
   yearly: 'Yearly',
 };
 
+export const FREQ_SHORT = {
+  daily: '/day',
+  weekly: '/wk',
+  biweekly: '/2wk',
+  monthly: '/mo',
+  quarterly: '/qtr',
+  yearly: '/yr',
+};
+
 export const toMonthly = (amount, freq) =>
   parseFloat(amount || 0) * (FREQ_MULTIPLIERS[freq] || 1);
 
